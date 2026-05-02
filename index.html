@@ -480,7 +480,10 @@
     </div>
 
     <div class="api-key-block">
-      <div class="section-label">API Keys</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div class="section-label" style="margin-bottom:0;">API Keys</div>
+        <span id="keySavedBadge" style="display:none;font-size:10px;letter-spacing:1px;color:var(--success);text-transform:uppercase;">✓ Saved</span>
+      </div>
       <div class="api-inputs">
         <input type="password" id="groqKey" placeholder="Groq API key (gsk_...)" />
         <input type="password" id="runpodKey" placeholder="RunPod API key (rpa_...)" />
@@ -553,6 +556,39 @@ function setPrompt(text) {
   document.getElementById('userPrompt').value = text;
   document.getElementById('userPrompt').focus();
 }
+
+function saveKeys() {
+  try {
+    localStorage.setItem('cnc_groq_key', document.getElementById('groqKey').value);
+    localStorage.setItem('cnc_runpod_key', document.getElementById('runpodKey').value);
+    localStorage.setItem('cnc_endpoint_id', document.getElementById('endpointId').value);
+  } catch(e) {}
+}
+
+function loadKeys() {
+  try {
+    const groq = localStorage.getItem('cnc_groq_key');
+    const runpod = localStorage.getItem('cnc_runpod_key');
+    const endpoint = localStorage.getItem('cnc_endpoint_id');
+    if (groq) document.getElementById('groqKey').value = groq;
+    if (runpod) document.getElementById('runpodKey').value = runpod;
+    if (endpoint) document.getElementById('endpointId').value = endpoint;
+    if (groq || runpod) {
+      document.getElementById('keySavedBadge').style.display = 'inline';
+    }
+  } catch(e) {}
+}
+
+window.addEventListener('DOMContentLoaded', loadKeys);
+
+['groqKey', 'runpodKey', 'endpointId'].forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById(id).addEventListener('change', () => {
+      saveKeys();
+      document.getElementById('keySavedBadge').style.display = 'inline';
+    });
+  });
+});
 
 function log(msg, type = 'info') {
   const box = document.getElementById('logBox');
