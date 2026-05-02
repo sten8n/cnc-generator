@@ -447,6 +447,24 @@
     </div>
 
     <div>
+      <div class="section-label">Reference Image <span style="color:#444;font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:400;">(optional)</span></div>
+      <div id="dropZone" onclick="document.getElementById('refImageInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" style="border:1px dashed #2a2a2a;border-radius:4px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;background:#0d0d0d;position:relative;">
+        <input type="file" id="refImageInput" accept="image/*" style="display:none;" onchange="handleImageFile(this.files[0])">
+        <div id="dropZonePlaceholder" style="color:#444;font-size:12px;line-height:1.6;">
+          <div style="font-size:22px;margin-bottom:6px;">⬆</div>
+          Click or drag an image here<br>
+          <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#333;">PNG · JPG · WEBP</span>
+        </div>
+        <div id="refPreview" style="display:none;position:relative;">
+          <img id="refPreviewImg" style="max-height:160px;max-width:100%;border-radius:3px;display:block;margin:0 auto;" />
+          <button onclick="clearReference(event)" style="position:absolute;top:-8px;right:-8px;background:#333;border:none;color:var(--white);border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;">×</button>
+          <div id="refFileName" style="font-size:10px;color:#555;margin-top:8px;letter-spacing:1px;"></div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#444;margin-top:6px;line-height:1.5;">The reference image is sent to Groq Vision to guide design style and composition. Use your best existing CNC designs as references.</div>
+    </div>
+
+    <div>
       <div class="section-label">Quick Examples</div>
       <div class="examples">
         <button class="example-chip" onclick="setPrompt('250th year USA Independence anniversary wall art')">🇺🇸 250th Year USA Independence Anniversary</button>
@@ -547,7 +565,7 @@ function buildPositivePrompt(designPrompt, widthIn, complexity, textContent, inc
     }
   }
 
-  return `CNC plasma cut metal wall art design in the style of premium tattoo flash art and vintage cast iron sign work. Black and white illustration on a perfectly flat pure white background. The design sits completely flat on the white surface with zero depth. No drop shadow, no cast shadow, no ambient shadow, no vignette, no darkness at edges. High contrast with clean crisp linework. No color, no gradients, no grey, no gray fills, no halftones, no shading of any kind - only clean black lines and solid black shapes on pure white. Banner ribbons are pure white with black outline and black text only. This design will be plasma cut at ${widthIn} inches wide so all lines must be physically cuttable - minimum line weight throughout. ${complexityStyles[complexity] || complexityStyles[2]}DESIGN: ${designPrompt}${textInstruction} Every black element connects to the main body through thick structural bridges - zero floating pieces. The four image corners are completely plain white with no marks, dots, holes, or circles. No mounting holes anywhere. Hard crisp edges everywhere. Symmetrical centered composition. Die-cut badge quality. Every banner ribbon is physically connected to the outer frame on both left and right sides - never floating. Bee legs are simple tapered solid black lines, no bristles or spines. Bee body edges are clean smooth curves with no fur texture. Wings have 3-4 simple bold vein lines maximum.`;
+  return `CNC plasma cut metal wall art design in the style of premium tattoo flash art and vintage cast iron sign work. Black and white illustration on a perfectly flat pure white background. The design sits completely flat on the white surface with zero depth. No drop shadow, no cast shadow, no ambient shadow, no vignette, no darkness at edges. High contrast with clean crisp linework. No color, no gradients, no grey, no gray fills, no halftones, no shading of any kind - only clean black lines and solid black shapes on pure white. Banner ribbons are pure white with black outline and black text only. This design will be plasma cut at ${widthIn} inches wide so all lines must be physically cuttable - minimum line weight throughout. ${complexityStyles[complexity] || complexityStyles[2]}DESIGN: ${designPrompt}${textInstruction} Every black element connects to the main body through thick structural bridges - zero floating pieces. The four image corners are completely plain white with no marks, dots, holes, or circles. No mounting holes anywhere. Hard crisp edges everywhere. Symmetrical centered composition. Die-cut badge quality. Every banner ribbon is physically connected to the outer frame on both left and right sides - never floating.`;
 }
 
 const NEGATIVE_PROMPT = 'gray, grey, gradient, shading, halftone, soft fill, mid-tone, ribbon shading, banner shading, floating banner, disconnected ribbon, ribbon not attached, drop shadow, cast shadow, box shadow, outer shadow, vignette, dark edges, darkness at border, ambient occlusion, depth shadow, soft edge, blur, color, photograph, 3D render, depth of field, watermark, sketch, watercolor, floating elements, disconnected pieces, mounting hole, screw hole, corner dot, registration mark, hanging hole, thin line, hairline, delicate lace, duplicate text, repeated text, scenic background, fur texture, fuzzy edges, hairy texture, bristles, feathered edges, soft fur, spines on legs, leg hair, body hair, jagged stripe edges, serrated edges';
@@ -555,6 +573,54 @@ const NEGATIVE_PROMPT = 'gray, grey, gradient, shading, halftone, soft fill, mid
 function setPrompt(text) {
   document.getElementById('userPrompt').value = text;
   document.getElementById('userPrompt').focus();
+}
+
+let referenceImageBase64 = null;
+let referenceImageType = null;
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').style.borderColor = 'var(--accent)';
+}
+
+function handleDragLeave(e) {
+  document.getElementById('dropZone').style.borderColor = '#2a2a2a';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').style.borderColor = '#2a2a2a';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleImageFile(file);
+}
+
+function handleImageFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    const base64 = dataUrl.split(',')[1];
+    referenceImageBase64 = base64;
+    referenceImageType = file.type;
+    document.getElementById('refPreviewImg').src = dataUrl;
+    document.getElementById('refFileName').textContent = file.name;
+    document.getElementById('dropZonePlaceholder').style.display = 'none';
+    document.getElementById('refPreview').style.display = 'block';
+    document.getElementById('dropZone').style.borderColor = 'var(--accent)';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReference(e) {
+  e.stopPropagation();
+  referenceImageBase64 = null;
+  referenceImageType = null;
+  document.getElementById('refPreviewImg').src = '';
+  document.getElementById('refFileName').textContent = '';
+  document.getElementById('dropZonePlaceholder').style.display = 'block';
+  document.getElementById('refPreview').style.display = 'none';
+  document.getElementById('dropZone').style.borderColor = '#2a2a2a';
+  document.getElementById('refImageInput').value = '';
 }
 
 function saveKeys() {
@@ -797,6 +863,26 @@ async function startGeneration() {
     setStatus('Generating design briefs with Groq...', 'active');
     log('Calling Groq to generate design briefs...', 'info');
 
+    // Build message content - include reference image if provided
+    let userContent;
+    if (referenceImageBase64) {
+      log('Reference image attached - using vision model', 'accent');
+      userContent = [
+        {
+          type: 'text',
+          text: userMsg + ' REFERENCE IMAGE: The attached image shows the style and quality level to aim for. Use it as a guide for composition, line weight, and overall aesthetic - but create completely new original designs based on the concept above.'
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: 'data:' + referenceImageType + ';base64,' + referenceImageBase64
+          }
+        }
+      ];
+    } else {
+      userContent = userMsg;
+    }
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -804,10 +890,10 @@ async function startGeneration() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: referenceImageBase64 ? 'llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMsg }
+          { role: 'user', content: userContent }
         ],
         temperature: 0.8,
         max_tokens: 4000
