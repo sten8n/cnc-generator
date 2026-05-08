@@ -813,7 +813,7 @@ async function generateSingleImage(runpodKey, endpointId, design, index, total) 
     const submitData = await submitRes.json();
     const jobId = submitData.id;
     if (!jobId) {
-      log(`No job ID returned for design ${index}`, 'error');
+      log(`No job ID for design ${index} — HTTP ${submitRes.status} — Response: ${JSON.stringify(submitData)}`, 'error');
       return;
     }
 
